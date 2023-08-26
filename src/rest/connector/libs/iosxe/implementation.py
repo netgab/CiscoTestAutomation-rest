@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 class Implementation(RestImplementation):
     '''Rest Implementation for IOS-XE
 
-    Implementation of Rest connection to elasitc Wireless LAN Controller running IOS-XE
+    Implementation of Rest connection to IOS-XE devices supporting RESTCONF
 
     YAML Example
     ------------
