@@ -11,6 +11,7 @@ __pycache__/
 # Developer files
 .project
 .pydevproject
+venv/
 
 # Pycharm files
 .idea

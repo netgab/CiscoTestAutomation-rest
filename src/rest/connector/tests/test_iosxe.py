@@ -70,530 +70,530 @@ class test_iosxe_test_connector(unittest.TestCase):
 """
 
         kwargs['mock'].get('https://198.51.100.3:443/restconf/data/site-cfg-data/ap-cfg-profiles/ap-cfg-profile', text=response_text)
-        output = connection.get('/restconf/data/site-cfg-data/ap-cfg-profiles/ap-cfg-profile', verbose=True).text
+        output = connection.get('site-cfg-data/ap-cfg-profiles/ap-cfg-profile').text
         self.assertEqual(output, response_text)
         connection.disconnect()
 
         self.assertEqual(connection.connected, False)
 
-    def test_post(self, **kwargs):
-        connection = self.test_connect()
-
-        payload = """
-        {
-    "Cisco-IOS-XE-wireless-site-cfg:ap-cfg-profile": {
-        "profile-name": "test-profile",
-        "description": "test-profile",
-        "hyperlocation": {
-            "hyperlocation-enable": true,
-            "pak-rssi-threshold-detection": -50
-        },
-        "halo-ble-entries": {
-            "halo-ble-entry": [
-                {
-                    "beacon-id": 0
-                },
-                {
-                    "beacon-id": 1
-                },
-                {
-                    "beacon-id": 2
-                },
-                {
-                    "beacon-id": 3
-                },
-                {
-                    "beacon-id": 4
-                }
-            ]
-        }
-    }
-}
-"""
-        url = 'https://198.51.100.3:443/restconf/data/site-cfg-data/ap-cfg-profiles'
-        kwargs['mock'].post(url, status_code=204)
-        output = connection.post('/restconf/data/site-cfg-data/ap-cfg-profiles', payload, content_type='json', verbose=True).text
-        self.assertEqual(output, '')
-        connection.disconnect()
-
-        self.assertEqual(connection.connected, False)
-
-
-    def test_post_dict_payload_without_content_type(self, **kwargs):
-        connection = self.test_connect()
-
-        payload = {
-    "Cisco-IOS-XE-wireless-site-cfg:ap-cfg-profile": {
-        "profile-name": "test-profile",
-        "description": "test-profile",
-        "hyperlocation": {
-            "hyperlocation-enable": True,
-            "pak-rssi-threshold-detection": -50
-        },
-        "halo-ble-entries": {
-            "halo-ble-entry": [
-                {
-                    "beacon-id": 0
-                },
-                {
-                    "beacon-id": 1
-                },
-                {
-                    "beacon-id": 2
-                },
-                {
-                    "beacon-id": 3
-                },
-                {
-                    "beacon-id": 4
-                }
-            ]
-        }
-    }
-}
-        response_text = ""
-
-        url = 'https://198.51.100.3:443/restconf/data/site-cfg-data/ap-cfg-profiles'
-        kwargs['mock'].post(url, text=response_text)
-        try:
-            output = connection.post('/restconf/data/site-cfg-data/ap-cfg-profiles', payload, verbose=True).text
-        except AssertionError as e:
-            self.assertEqual(str(e), 'content_type parameter required when passing dict')
-        connection.disconnect()
-
-        self.assertEqual(connection.connected, False)
-
-    def test_post_dict_payload_with_json_content_type(self, **kwargs):
-        connection = self.test_connect()
-
-        payload = {
-    "Cisco-IOS-XE-wireless-site-cfg:ap-cfg-profile": {
-        "profile-name": "test-profile",
-        "description": "test-profile",
-        "hyperlocation": {
-            "hyperlocation-enable": True,
-            "pak-rssi-threshold-detection": -50
-        },
-        "halo-ble-entries": {
-            "halo-ble-entry": [
-                {
-                    "beacon-id": 0
-                },
-                {
-                    "beacon-id": 1
-                },
-                {
-                    "beacon-id": 2
-                },
-                {
-                    "beacon-id": 3
-                },
-                {
-                    "beacon-id": 4
-                }
-            ]
-        }
-    }
-}
-        url = 'https://198.51.100.3:443/restconf/data/site-cfg-data/ap-cfg-profiles'
-        kwargs['mock'].post(url, status_code=204)
-        try:
-            output = connection.post('/restconf/data/site-cfg-data/ap-cfg-profiles', payload, content_type='json', verbose=True).text
-        except AssertionError as e:
-            self.assertEqual(str(e), 'content_type parameter required when passing dict')
-        connection.disconnect()
-
-        self.assertEqual(connection.connected, False)
-
-    def test_post_dict_payload_with_xml_content_type(self, **kwargs):
-        connection = self.test_connect()
-
-        payload = {
-    "Cisco-IOS-XE-wireless-site-cfg:ap-cfg-profile": {
-        "profile-name": "test-profile",
-        "description": "test-profile",
-        "hyperlocation": {
-            "hyperlocation-enable": True,
-            "pak-rssi-threshold-detection": -50
-        },
-        "halo-ble-entries": {
-            "halo-ble-entry": [
-                {
-                    "beacon-id": 0
-                },
-                {
-                    "beacon-id": 1
-                },
-                {
-                    "beacon-id": 2
-                },
-                {
-                    "beacon-id": 3
-                },
-                {
-                    "beacon-id": 4
-                }
-            ]
-        }
-    }
-}
-        url = 'https://198.51.100.3:443/restconf/data/site-cfg-data/ap-cfg-profiles'
-        kwargs['mock'].post(url, status_code=204)
-        try:
-            output = connection.post('/restconf/data/site-cfg-data/ap-cfg-profiles', payload, content_type='xml', verbose=True).text
-        except AssertionError as e:
-            self.assertEqual(str(e), 'content_type parameter required when passing dict')
-        connection.disconnect()
-
-        self.assertEqual(connection.connected, False)
-
-
-    def test_patch(self, **kwargs):
-        connection = self.test_connect()
-
-        payload = """{
-    "Cisco-IOS-XE-wireless-site-cfg:ap-cfg-profile": {
-        "hyperlocation": {
-            "hyperlocation-enable": true,
-            "pak-rssi-threshold-detection": -50
-        },
-        "halo-ble-entries": {
-            "halo-ble-entry": [
-                {
-                    "beacon-id": 0
-                },
-                {
-                    "beacon-id": 1
-                },
-                {
-                    "beacon-id": 2
-                },
-                {
-                    "beacon-id": 3
-                },
-                {
-                    "beacon-id": 4
-                }
-            ]
-        }
-    }
-}
-"""
-        url = 'https://198.51.100.3:443/restconf/data/site-cfg-data/ap-cfg-profiles/ap-cfg-profile=default-ap-profile'
-        kwargs['mock'].patch(url, status_code=204)
-        output = connection.patch('/restconf/data/site-cfg-data/ap-cfg-profiles/ap-cfg-profile=default-ap-profile', payload, content_type='json', verbose=True).text
-        self.assertEqual(output, '')
-        connection.disconnect()
-
-        self.assertEqual(connection.connected, False)
-
-
-    def test_patch_dict_payload_without_content_type(self, **kwargs):
-        connection = self.test_connect()
-
-        payload = {
-    "Cisco-IOS-XE-wireless-site-cfg:ap-cfg-profile": {
-        "hyperlocation": {
-            "hyperlocation-enable": True,
-            "pak-rssi-threshold-detection": -50
-        },
-        "halo-ble-entries": {
-            "halo-ble-entry": [
-                {
-                    "beacon-id": 0
-                },
-                {
-                    "beacon-id": 1
-                },
-                {
-                    "beacon-id": 2
-                },
-                {
-                    "beacon-id": 3
-                },
-                {
-                    "beacon-id": 4
-                }
-            ]
-        }
-    }
-}
-        response_text = ""
-
-        url = 'https://198.51.100.3:443/restconf/data/site-cfg-data/ap-cfg-profiles/ap-cfg-profile=default-ap-profile'
-        kwargs['mock'].patch(url, text=response_text)
-        try:
-            output = connection.patch('/restconf/data/site-cfg-data/ap-cfg-profiles/ap-cfg-profile=default-ap-profile', payload, verbose=True).text
-        except AssertionError as e:
-            self.assertEqual(str(e), 'content_type parameter required when passing dict')
-        connection.disconnect()
-
-        self.assertEqual(connection.connected, False)
-
-    def test_patch_dict_payload_with_json_content_type(self, **kwargs):
-        connection = self.test_connect()
-
-        payload = {
-    "Cisco-IOS-XE-wireless-site-cfg:ap-cfg-profile": {
-        "profile-name": "test-profile",
-        "description": "test-profile",
-        "hyperlocation": {
-            "hyperlocation-enable": True,
-            "pak-rssi-threshold-detection": -50
-        },
-        "halo-ble-entries": {
-            "halo-ble-entry": [
-                {
-                    "beacon-id": 0
-                },
-                {
-                    "beacon-id": 1
-                },
-                {
-                    "beacon-id": 2
-                },
-                {
-                    "beacon-id": 3
-                },
-                {
-                    "beacon-id": 4
-                }
-            ]
-        }
-    }
-}
-        url = 'https://198.51.100.3:443/restconf/data/site-cfg-data/ap-cfg-profiles/ap-cfg-profile=default-ap-profile'
-        kwargs['mock'].patch(url, status_code=204)
-        try:
-            output = connection.patch('/restconf/data/site-cfg-data/ap-cfg-profiles/ap-cfg-profile=default-ap-profile', payload, content_type='json', verbose=True).text
-        except AssertionError as e:
-            self.assertEqual(str(e), 'content_type parameter required when passing dict')
-        connection.disconnect()
-
-        self.assertEqual(connection.connected, False)
-
-    def test_patch_dict_payload_with_xml_content_type(self, **kwargs):
-        connection = self.test_connect()
-
-        payload = {
-    "Cisco-IOS-XE-wireless-site-cfg:ap-cfg-profile": {
-        "hyperlocation": {
-            "hyperlocation-enable": True,
-            "pak-rssi-threshold-detection": -50
-        },
-        "halo-ble-entries": {
-            "halo-ble-entry": [
-                {
-                    "beacon-id": 0
-                },
-                {
-                    "beacon-id": 1
-                },
-                {
-                    "beacon-id": 2
-                },
-                {
-                    "beacon-id": 3
-                },
-                {
-                    "beacon-id": 4
-                }
-            ]
-        }
-    }
-}
-        url = 'https://198.51.100.3:443/restconf/data/site-cfg-data/ap-cfg-profiles/ap-cfg-profile=default-ap-profile'
-        kwargs['mock'].patch(url, status_code=204)
-        try:
-            output = connection.patch('/restconf/data/site-cfg-data/ap-cfg-profiles/ap-cfg-profile=default-ap-profile', payload, content_type='xml', verbose=True).text
-        except AssertionError as e:
-            self.assertEqual(str(e), 'content_type parameter required when passing dict')
-        connection.disconnect()
-
-        self.assertEqual(connection.connected, False)
-
-
-    def test_put(self, **kwargs):
-        connection = self.test_connect()
-
-        payload = """{
-    "Cisco-IOS-XE-wireless-site-cfg:ap-cfg-profile": {
-        "profile-name": "test-profile",
-        "description": "test-profile",
-        "hyperlocation": {
-            "hyperlocation-enable": true,
-            "pak-rssi-threshold-detection": -50
-        },
-        "halo-ble-entries": {
-            "halo-ble-entry": [
-                {
-                    "beacon-id": 0
-                },
-                {
-                    "beacon-id": 1
-                },
-                {
-                    "beacon-id": 2
-                },
-                {
-                    "beacon-id": 3
-                },
-                {
-                    "beacon-id": 4
-                }
-            ]
-        }
-    }
-}
-"""
-        url = 'https://198.51.100.3:443/restconf/data/site-cfg-data/ap-cfg-profiles'
-        kwargs['mock'].put(url, status_code=204)
-        output = connection.put('/restconf/data/site-cfg-data/ap-cfg-profiles', payload, content_type='json', verbose=True).text
-        self.assertEqual(output, '')
-        connection.disconnect()
-
-        self.assertEqual(connection.connected, False)
-
-
-    def test_put_dict_payload_without_content_type(self, **kwargs):
-        connection = self.test_connect()
-
-        payload = {
-    "Cisco-IOS-XE-wireless-site-cfg:ap-cfg-profile": {
-        "profile-name": "test-profile",
-        "description": "test-profile",
-        "hyperlocation": {
-            "hyperlocation-enable": True,
-            "pak-rssi-threshold-detection": -50
-        },
-        "halo-ble-entries": {
-            "halo-ble-entry": [
-                {
-                    "beacon-id": 0
-                },
-                {
-                    "beacon-id": 1
-                },
-                {
-                    "beacon-id": 2
-                },
-                {
-                    "beacon-id": 3
-                },
-                {
-                    "beacon-id": 4
-                }
-            ]
-        }
-    }
-}
-        response_text = ""
-
-        url = 'https://198.51.100.3:443/restconf/data/site-cfg-data/ap-cfg-profiles'
-        kwargs['mock'].put(url, text=response_text)
-        try:
-            output = connection.put('/restconf/data/site-cfg-data/ap-cfg-profiles', payload, verbose=True).text
-        except AssertionError as e:
-            self.assertEqual(str(e), 'content_type parameter required when passing dict')
-        connection.disconnect()
-
-        self.assertEqual(connection.connected, False)
-
-    def test_put_dict_payload_with_json_content_type(self, **kwargs):
-        connection = self.test_connect()
-
-        payload = {
-    "Cisco-IOS-XE-wireless-site-cfg:ap-cfg-profile": {
-        "profile-name": "test-profile",
-        "description": "test-profile",
-        "hyperlocation": {
-            "hyperlocation-enable": True,
-            "pak-rssi-threshold-detection": -50
-        },
-        "halo-ble-entries": {
-            "halo-ble-entry": [
-                {
-                    "beacon-id": 0
-                },
-                {
-                    "beacon-id": 1
-                },
-                {
-                    "beacon-id": 2
-                },
-                {
-                    "beacon-id": 3
-                },
-                {
-                    "beacon-id": 4
-                }
-            ]
-        }
-    }
-}
-        url = 'https://198.51.100.3:443/restconf/data/site-cfg-data/ap-cfg-profiles'
-        kwargs['mock'].put(url, status_code=204)
-        try:
-            output = connection.put('/restconf/data/site-cfg-data/ap-cfg-profiles', payload, content_type='json', verbose=True).text
-        except AssertionError as e:
-            self.assertEqual(str(e), 'content_type parameter required when passing dict')
-        connection.disconnect()
-
-        self.assertEqual(connection.connected, False)
-
-    def test_put_dict_payload_with_xml_content_type(self, **kwargs):
-        connection = self.test_connect()
-
-        payload = {
-    "Cisco-IOS-XE-wireless-site-cfg:ap-cfg-profile": {
-        "profile-name": "test-profile",
-        "description": "test-profile",
-        "hyperlocation": {
-            "hyperlocation-enable": True,
-            "pak-rssi-threshold-detection": -50
-        },
-        "halo-ble-entries": {
-            "halo-ble-entry": [
-                {
-                    "beacon-id": 0
-                },
-                {
-                    "beacon-id": 1
-                },
-                {
-                    "beacon-id": 2
-                },
-                {
-                    "beacon-id": 3
-                },
-                {
-                    "beacon-id": 4
-                }
-            ]
-        }
-    }
-}
-        url = 'https://198.51.100.3:443/restconf/data/site-cfg-data/ap-cfg-profiles'
-        kwargs['mock'].put(url, status_code=204)
-        try:
-            output = connection.put('/restconf/data/site-cfg-data/ap-cfg-profiles', payload, content_type='xml', verbose=True).text
-        except AssertionError as e:
-            self.assertEqual(str(e), 'content_type parameter required when passing dict')
-        connection.disconnect()
-
-        self.assertEqual(connection.connected, False)
-
-
-    def test_delete(self, **kwargs):
-        connection = self.test_connect()
-
-        url = 'https://198.51.100.3:443/restconf/data/site-cfg-data/ap-cfg-profiles/ap-cfg-profile=test-profile'
-        kwargs['mock'].delete(url, status_code=204)
-        output = connection.delete('/restconf/data/site-cfg-data/ap-cfg-profiles/ap-cfg-profile=test-profile', verbose=True).text
-        self.assertEqual(output, '')
-        connection.disconnect()
-
-        self.assertEqual(connection.connected, False)
+#    def test_post(self, **kwargs):
+#        connection = self.test_connect()
+#
+#        payload = """
+#        {
+#    "Cisco-IOS-XE-wireless-site-cfg:ap-cfg-profile": {
+#        "profile-name": "test-profile",
+#        "description": "test-profile",
+#        "hyperlocation": {
+#            "hyperlocation-enable": true,
+#            "pak-rssi-threshold-detection": -50
+#        },
+#        "halo-ble-entries": {
+#            "halo-ble-entry": [
+#                {
+#                    "beacon-id": 0
+#                },
+#                {
+#                    "beacon-id": 1
+#                },
+#                {
+#                    "beacon-id": 2
+#                },
+#                {
+#                    "beacon-id": 3
+#                },
+#                {
+#                    "beacon-id": 4
+#                }
+#            ]
+#        }
+#    }
+#}
+#"""
+#        url = 'https://198.51.100.3:443/restconf/data/site-cfg-data/ap-cfg-profiles'
+#        kwargs['mock'].post(url, status_code=204)
+#        output = connection.post('/restconf/data/site-cfg-data/ap-cfg-profiles', payload, content_type='json', verbose=True).text
+#        self.assertEqual(output, '')
+#        connection.disconnect()
+#
+#        self.assertEqual(connection.connected, False)
+#
+#
+#    def test_post_dict_payload_without_content_type(self, **kwargs):
+#        connection = self.test_connect()
+#
+#        payload = {
+#    "Cisco-IOS-XE-wireless-site-cfg:ap-cfg-profile": {
+#        "profile-name": "test-profile",
+#        "description": "test-profile",
+#        "hyperlocation": {
+#            "hyperlocation-enable": True,
+#            "pak-rssi-threshold-detection": -50
+#        },
+#        "halo-ble-entries": {
+#            "halo-ble-entry": [
+#                {
+#                    "beacon-id": 0
+#                },
+#                {
+#                    "beacon-id": 1
+#                },
+#                {
+#                    "beacon-id": 2
+#                },
+#                {
+#                    "beacon-id": 3
+#                },
+#                {
+#                    "beacon-id": 4
+#                }
+#            ]
+#        }
+#    }
+#}
+#        response_text = ""
+#
+#        url = 'https://198.51.100.3:443/restconf/data/site-cfg-data/ap-cfg-profiles'
+#        kwargs['mock'].post(url, text=response_text)
+#        try:
+#            output = connection.post('/restconf/data/site-cfg-data/ap-cfg-profiles', payload, verbose=True).text
+#        except AssertionError as e:
+#            self.assertEqual(str(e), 'content_type parameter required when passing dict')
+#        connection.disconnect()
+#
+#        self.assertEqual(connection.connected, False)
+#
+#    def test_post_dict_payload_with_json_content_type(self, **kwargs):
+#        connection = self.test_connect()
+#
+#        payload = {
+#    "Cisco-IOS-XE-wireless-site-cfg:ap-cfg-profile": {
+#        "profile-name": "test-profile",
+#        "description": "test-profile",
+#        "hyperlocation": {
+#            "hyperlocation-enable": True,
+#            "pak-rssi-threshold-detection": -50
+#        },
+#        "halo-ble-entries": {
+#            "halo-ble-entry": [
+#                {
+#                    "beacon-id": 0
+#                },
+#                {
+#                    "beacon-id": 1
+#                },
+#                {
+#                    "beacon-id": 2
+#                },
+#                {
+#                    "beacon-id": 3
+#                },
+#                {
+#                    "beacon-id": 4
+#                }
+#            ]
+#        }
+#    }
+#}
+#        url = 'https://198.51.100.3:443/restconf/data/site-cfg-data/ap-cfg-profiles'
+#        kwargs['mock'].post(url, status_code=204)
+#        try:
+#            output = connection.post('/restconf/data/site-cfg-data/ap-cfg-profiles', payload, content_type='json', verbose=True).text
+#        except AssertionError as e:
+#            self.assertEqual(str(e), 'content_type parameter required when passing dict')
+#        connection.disconnect()
+#
+#        self.assertEqual(connection.connected, False)
+#
+#    def test_post_dict_payload_with_xml_content_type(self, **kwargs):
+#        connection = self.test_connect()
+#
+#        payload = {
+#    "Cisco-IOS-XE-wireless-site-cfg:ap-cfg-profile": {
+#        "profile-name": "test-profile",
+#        "description": "test-profile",
+#        "hyperlocation": {
+#            "hyperlocation-enable": True,
+#            "pak-rssi-threshold-detection": -50
+#        },
+#        "halo-ble-entries": {
+#            "halo-ble-entry": [
+#                {
+#                    "beacon-id": 0
+#                },
+#                {
+#                    "beacon-id": 1
+#                },
+#                {
+#                    "beacon-id": 2
+#                },
+#                {
+#                    "beacon-id": 3
+#                },
+#                {
+#                    "beacon-id": 4
+#                }
+#            ]
+#        }
+#    }
+#}
+#        url = 'https://198.51.100.3:443/restconf/data/site-cfg-data/ap-cfg-profiles'
+#        kwargs['mock'].post(url, status_code=204)
+#        try:
+#            output = connection.post('/restconf/data/site-cfg-data/ap-cfg-profiles', payload, content_type='xml', verbose=True).text
+#        except AssertionError as e:
+#            self.assertEqual(str(e), 'content_type parameter required when passing dict')
+#        connection.disconnect()
+#
+#        self.assertEqual(connection.connected, False)
+#
+#
+#    def test_patch(self, **kwargs):
+#        connection = self.test_connect()
+#
+#        payload = """{
+#    "Cisco-IOS-XE-wireless-site-cfg:ap-cfg-profile": {
+#        "hyperlocation": {
+#            "hyperlocation-enable": true,
+#            "pak-rssi-threshold-detection": -50
+#        },
+#        "halo-ble-entries": {
+#            "halo-ble-entry": [
+#                {
+#                    "beacon-id": 0
+#                },
+#                {
+#                    "beacon-id": 1
+#                },
+#                {
+#                    "beacon-id": 2
+#                },
+#                {
+#                    "beacon-id": 3
+#                },
+#                {
+#                    "beacon-id": 4
+#                }
+#            ]
+#        }
+#    }
+#}
+#"""
+#        url = 'https://198.51.100.3:443/restconf/data/site-cfg-data/ap-cfg-profiles/ap-cfg-profile=default-ap-profile'
+#        kwargs['mock'].patch(url, status_code=204)
+#        output = connection.patch('/restconf/data/site-cfg-data/ap-cfg-profiles/ap-cfg-profile=default-ap-profile', payload, content_type='json', verbose=True).text
+#        self.assertEqual(output, '')
+#        connection.disconnect()
+#
+#        self.assertEqual(connection.connected, False)
+#
+#
+#    def test_patch_dict_payload_without_content_type(self, **kwargs):
+#        connection = self.test_connect()
+#
+#        payload = {
+#    "Cisco-IOS-XE-wireless-site-cfg:ap-cfg-profile": {
+#        "hyperlocation": {
+#            "hyperlocation-enable": True,
+#            "pak-rssi-threshold-detection": -50
+#        },
+#        "halo-ble-entries": {
+#            "halo-ble-entry": [
+#                {
+#                    "beacon-id": 0
+#                },
+#                {
+#                    "beacon-id": 1
+#                },
+#                {
+#                    "beacon-id": 2
+#                },
+#                {
+#                    "beacon-id": 3
+#                },
+#                {
+#                    "beacon-id": 4
+#                }
+#            ]
+#        }
+#    }
+#}
+#        response_text = ""
+#
+#        url = 'https://198.51.100.3:443/restconf/data/site-cfg-data/ap-cfg-profiles/ap-cfg-profile=default-ap-profile'
+#        kwargs['mock'].patch(url, text=response_text)
+#        try:
+#            output = connection.patch('/restconf/data/site-cfg-data/ap-cfg-profiles/ap-cfg-profile=default-ap-profile', payload, verbose=True).text
+#        except AssertionError as e:
+#            self.assertEqual(str(e), 'content_type parameter required when passing dict')
+#        connection.disconnect()
+#
+#        self.assertEqual(connection.connected, False)
+#
+#    def test_patch_dict_payload_with_json_content_type(self, **kwargs):
+#        connection = self.test_connect()
+#
+#        payload = {
+#    "Cisco-IOS-XE-wireless-site-cfg:ap-cfg-profile": {
+#        "profile-name": "test-profile",
+#        "description": "test-profile",
+#        "hyperlocation": {
+#            "hyperlocation-enable": True,
+#            "pak-rssi-threshold-detection": -50
+#        },
+#        "halo-ble-entries": {
+#            "halo-ble-entry": [
+#                {
+#                    "beacon-id": 0
+#                },
+#                {
+#                    "beacon-id": 1
+#                },
+#                {
+#                    "beacon-id": 2
+#                },
+#                {
+#                    "beacon-id": 3
+#                },
+#                {
+#                    "beacon-id": 4
+#                }
+#            ]
+#        }
+#    }
+#}
+#        url = 'https://198.51.100.3:443/restconf/data/site-cfg-data/ap-cfg-profiles/ap-cfg-profile=default-ap-profile'
+#        kwargs['mock'].patch(url, status_code=204)
+#        try:
+#            output = connection.patch('/restconf/data/site-cfg-data/ap-cfg-profiles/ap-cfg-profile=default-ap-profile', payload, content_type='json', verbose=True).text
+#        except AssertionError as e:
+#            self.assertEqual(str(e), 'content_type parameter required when passing dict')
+#        connection.disconnect()
+#
+#        self.assertEqual(connection.connected, False)
+#
+#    def test_patch_dict_payload_with_xml_content_type(self, **kwargs):
+#        connection = self.test_connect()
+#
+#        payload = {
+#    "Cisco-IOS-XE-wireless-site-cfg:ap-cfg-profile": {
+#        "hyperlocation": {
+#            "hyperlocation-enable": True,
+#            "pak-rssi-threshold-detection": -50
+#        },
+#        "halo-ble-entries": {
+#            "halo-ble-entry": [
+#                {
+#                    "beacon-id": 0
+#                },
+#                {
+#                    "beacon-id": 1
+#                },
+#                {
+#                    "beacon-id": 2
+#                },
+#                {
+#                    "beacon-id": 3
+#                },
+#                {
+#                    "beacon-id": 4
+#                }
+#            ]
+#        }
+#    }
+#}
+#        url = 'https://198.51.100.3:443/restconf/data/site-cfg-data/ap-cfg-profiles/ap-cfg-profile=default-ap-profile'
+#        kwargs['mock'].patch(url, status_code=204)
+#        try:
+#            output = connection.patch('/restconf/data/site-cfg-data/ap-cfg-profiles/ap-cfg-profile=default-ap-profile', payload, content_type='xml', verbose=True).text
+#        except AssertionError as e:
+#            self.assertEqual(str(e), 'content_type parameter required when passing dict')
+#        connection.disconnect()
+#
+#        self.assertEqual(connection.connected, False)
+#
+#
+#    def test_put(self, **kwargs):
+#        connection = self.test_connect()
+#
+#        payload = """{
+#    "Cisco-IOS-XE-wireless-site-cfg:ap-cfg-profile": {
+#        "profile-name": "test-profile",
+#        "description": "test-profile",
+#        "hyperlocation": {
+#            "hyperlocation-enable": true,
+#            "pak-rssi-threshold-detection": -50
+#        },
+#        "halo-ble-entries": {
+#            "halo-ble-entry": [
+#                {
+#                    "beacon-id": 0
+#                },
+#                {
+#                    "beacon-id": 1
+#                },
+#                {
+#                    "beacon-id": 2
+#                },
+#                {
+#                    "beacon-id": 3
+#                },
+#                {
+#                    "beacon-id": 4
+#                }
+#            ]
+#        }
+#    }
+#}
+#"""
+#        url = 'https://198.51.100.3:443/restconf/data/site-cfg-data/ap-cfg-profiles'
+#        kwargs['mock'].put(url, status_code=204)
+#        output = connection.put('/restconf/data/site-cfg-data/ap-cfg-profiles', payload, content_type='json', verbose=True).text
+#        self.assertEqual(output, '')
+#        connection.disconnect()
+#
+#        self.assertEqual(connection.connected, False)
+#
+#
+#    def test_put_dict_payload_without_content_type(self, **kwargs):
+#        connection = self.test_connect()
+#
+#        payload = {
+#    "Cisco-IOS-XE-wireless-site-cfg:ap-cfg-profile": {
+#        "profile-name": "test-profile",
+#        "description": "test-profile",
+#        "hyperlocation": {
+#            "hyperlocation-enable": True,
+#            "pak-rssi-threshold-detection": -50
+#        },
+#        "halo-ble-entries": {
+#            "halo-ble-entry": [
+#                {
+#                    "beacon-id": 0
+#                },
+#                {
+#                    "beacon-id": 1
+#                },
+#                {
+#                    "beacon-id": 2
+#                },
+#                {
+#                    "beacon-id": 3
+#                },
+#                {
+#                    "beacon-id": 4
+#                }
+#            ]
+#        }
+#    }
+#}
+#        response_text = ""
+#
+#        url = 'https://198.51.100.3:443/restconf/data/site-cfg-data/ap-cfg-profiles'
+#        kwargs['mock'].put(url, text=response_text)
+#        try:
+#            output = connection.put('/restconf/data/site-cfg-data/ap-cfg-profiles', payload, verbose=True).text
+#        except AssertionError as e:
+#            self.assertEqual(str(e), 'content_type parameter required when passing dict')
+#        connection.disconnect()
+#
+#        self.assertEqual(connection.connected, False)
+#
+#    def test_put_dict_payload_with_json_content_type(self, **kwargs):
+#        connection = self.test_connect()
+#
+#        payload = {
+#    "Cisco-IOS-XE-wireless-site-cfg:ap-cfg-profile": {
+#        "profile-name": "test-profile",
+#        "description": "test-profile",
+#        "hyperlocation": {
+#            "hyperlocation-enable": True,
+#            "pak-rssi-threshold-detection": -50
+#        },
+#        "halo-ble-entries": {
+#            "halo-ble-entry": [
+#                {
+#                    "beacon-id": 0
+#                },
+#                {
+#                    "beacon-id": 1
+#                },
+#                {
+#                    "beacon-id": 2
+#                },
+#                {
+#                    "beacon-id": 3
+#                },
+#                {
+#                    "beacon-id": 4
+#                }
+#            ]
+#        }
+#    }
+#}
+#        url = 'https://198.51.100.3:443/restconf/data/site-cfg-data/ap-cfg-profiles'
+#        kwargs['mock'].put(url, status_code=204)
+#        try:
+#            output = connection.put('/restconf/data/site-cfg-data/ap-cfg-profiles', payload, content_type='json', verbose=True).text
+#        except AssertionError as e:
+#            self.assertEqual(str(e), 'content_type parameter required when passing dict')
+#        connection.disconnect()
+#
+#        self.assertEqual(connection.connected, False)
+#
+#    def test_put_dict_payload_with_xml_content_type(self, **kwargs):
+#        connection = self.test_connect()
+#
+#        payload = {
+#    "Cisco-IOS-XE-wireless-site-cfg:ap-cfg-profile": {
+#        "profile-name": "test-profile",
+#        "description": "test-profile",
+#        "hyperlocation": {
+#            "hyperlocation-enable": True,
+#            "pak-rssi-threshold-detection": -50
+#        },
+#        "halo-ble-entries": {
+#            "halo-ble-entry": [
+#                {
+#                    "beacon-id": 0
+#                },
+#                {
+#                    "beacon-id": 1
+#                },
+#                {
+#                    "beacon-id": 2
+#                },
+#                {
+#                    "beacon-id": 3
+#                },
+#                {
+#                    "beacon-id": 4
+#                }
+#            ]
+#        }
+#    }
+#}
+#        url = 'https://198.51.100.3:443/restconf/data/site-cfg-data/ap-cfg-profiles'
+#        kwargs['mock'].put(url, status_code=204)
+#        try:
+#            output = connection.put('/restconf/data/site-cfg-data/ap-cfg-profiles', payload, content_type='xml', verbose=True).text
+#        except AssertionError as e:
+#            self.assertEqual(str(e), 'content_type parameter required when passing dict')
+#        connection.disconnect()
+#
+#        self.assertEqual(connection.connected, False)
+#
+#
+#    def test_delete(self, **kwargs):
+#        connection = self.test_connect()
+#
+#        url = 'https://198.51.100.3:443/restconf/data/site-cfg-data/ap-cfg-profiles/ap-cfg-profile=test-profile'
+#        kwargs['mock'].delete(url, status_code=204)
+#        output = connection.delete('/restconf/data/site-cfg-data/ap-cfg-profiles/ap-cfg-profile=test-profile', verbose=True).text
+#        self.assertEqual(output, '')
+#        connection.disconnect()
+#
+#        self.assertEqual(connection.connected, False)
 
 
 if __name__ == "__main__":

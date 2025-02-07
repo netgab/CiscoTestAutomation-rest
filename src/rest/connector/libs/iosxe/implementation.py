@@ -2,8 +2,7 @@ import json
 import logging
 import re
 import urllib.request
-import requests
-from dict2xml import dict2xml
+from requests import Session, status_codes, RequestException
 from requests.exceptions import RequestException
 
 from pyats.connections import BaseConnection
@@ -11,7 +10,7 @@ from rest.connector.implementation import Implementation as RestImplementation
 from rest.connector.utils import get_username_password
 
 # create a logger for this module
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class Implementation(RestImplementation):
@@ -51,23 +50,53 @@ class Implementation(RestImplementation):
     '''
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._is_connected = False
         if 'proxies' not in kwargs:
             self.proxies = urllib.request.getproxies()
+    @property
+    def connected(self):
+        '''Is a device connected'''
+        return self._is_connected
+
+    def _get(self, restconf_path):
+
+        '''GET REST Command to retrieve information from the device'''
+
+        expected_status_codes = [
+            status_codes.codes.ok,
+            status_codes.codes.no_content
+        ]
+
+        
+        url = f'{self._base_url}/{restconf_path}'
+        logger.debug(f'GET: {url}')
+
+        response = self._session.get(url=url, timeout=self._timeout)
+        logger.debug(f'Response: {response.text}, '\
+                f'headers: {response.headers}, '\
+                f'reason: {response.reason}, '\
+                f'status code: {response.status_code}')
+        
+        if response.status_code not in expected_status_codes:
+            raise RequestException(f"Connection to {url} has returned the " \
+                    f"following code {response.status_code}, instead of the " \
+                    f"expected status code {status_codes.codes.ok}")
+
+        return response
+
 
     @BaseConnection.locked
     def connect(self,
                 timeout=30,
-                default_content_type='json',
-                verbose=False,
-                port="443",
-                protocol='https'):
+                content_type='json',
+                verbose=False):
         '''connect to the device via REST
 
         Arguments
         ---------
 
             timeout (int): Timeout value
-            default_content_type: Default for content type, json or xml
+            content_type: Default for content type, json or xml
             proxies: Specify the proxy to use for connection as seen below.
                     {'http': 'http://proxy.esl.cisco.com:80/',
                     'ftp': 'http://proxy.esl.cisco.com:80/',
@@ -89,14 +118,68 @@ class Implementation(RestImplementation):
         This does nothing
 
         '''
+        
+        
         if self.connected:
             return
 
-        log.debug("Content type: %s" % default_content_type)
-        log.debug("Timeout: %s" % timeout)
-        self.content_type = default_content_type
+        logger.info(f'Establish RESTCONF connection to: {self.device.name}')
 
-        self.verify = self.connection_info.get('verify', True)
+        self._timeout = timeout
+        logger.debug(f'Timeout: {self._timeout}')
+
+        # Set content-type
+        logger.debug(f'Content type: {content_type}')
+
+        # Set certificate validation, based on Device information
+        verify = self.connection_info.get('verify', True)
+        logger.debug(f'Certificate validation: {verify}')
+
+        # Set protocol
+        try:
+            protocol = self.connection_info['protocol']
+        except KeyError:
+            protocol = "https"
+        logger.debug(f'Protocol: {protocol}')
+
+        # Set port
+        try:
+            port = self.connection_info['port']
+        except KeyError:
+            port = 443
+        logger.debug(f'Port: {port}')
+
+        # Set API endpoint. Prefer the host (FQDN) and fallback to IP (ip)
+        try:
+            endpoint = self.connection_info['host']
+        except KeyError:
+            endpoint = self.connection_info['ip'].exploded
+        logger.debug(f'API endpoint: {endpoint}')
+
+        # Set base URL
+        try:
+            base_url = self.connection_info['base_url']
+        except KeyError:
+            base_url = "/restconf/data"
+        logger.debug(f'Base URL: {base_url}')
+
+        # Set Endpoint
+        try:
+            endpoint = self.connection_info['host']
+        except KeyError:
+            endpoint = self.connection_info['ip'].exploded
+        logger.debug(f'API endpoint: {endpoint}')
+
+        # Set base URL
+        self._base_url = f'{protocol}://{endpoint}:{port}{base_url}'
+        logger.info(f'RESTCONF base URL: {self._base_url}')
+
+        # Requests connection object
+        self._session = Session()
+        self._session.auth = get_username_password(self)
+        self._session.verify = verify
+        self._session.headers.update({'Accept': f'application/yang-data+{content_type}'})
+
         # support sshtunnel
         if 'sshtunnel' in self.connection_info:
             try:
@@ -114,466 +197,38 @@ class Implementation(RestImplementation):
                 raise AttributeError(
                     "Cannot add ssh tunnel. Connection %s may not have ip/host or port.\n%s"
                     % (self.via, e))
-        else:
-            ip = self.connection_info.ip.exploded
-            port = self.connection_info.get('port', port)
-
-        if 'protocol' in self.connection_info:
-            protocol = self.connection_info['protocol']
-
-        self.base_url = '{protocol}://{ip}:{port}'.format(protocol=protocol,
-                                                          ip=ip,
-                                                          port=port)
-
+ 
         # ---------------------------------------------------------------------
         # Connect to "well-known" RESTCONF resource to "test", the
         # RESTCONF connection on 'connect'. Comparable to CLI (SSH) connection,
         # which triggers a "show version" on connect
         # ---------------------------------------------------------------------
-        log.info("Connecting to '{d}' with alias "
-                 "'{a}'".format(d=self.device.name, a=self.alias))
-        login_url = '{f}/restconf/data/Cisco-IOS-XE-native:native/version'.format(f=self.base_url)
-        username, password = get_username_password(self)
-
-        self.session = requests.Session()
-        self.session.auth = (username, password)
-        self.session.verify = self.verify
-
-        header = 'application/yang-data+{fmt}'
-
-        if default_content_type.lower() == 'json':
-            accept_header = header.format(fmt='json')
-        elif default_content_type.lower() == 'xml':
-            accept_header = header.format(fmt='xml')
-        else:
-            accept_header = default_content_type
-        
-        self.session.headers.update({'Accept': accept_header})
+        well_known_path = "Cisco-IOS-XE-native:native/version"
 
         # Connect to the device via requests
-        response = self.session.get(
-            login_url, proxies=self.proxies, timeout=timeout)
-        output = response.text
-        log.debug("Response: {c} {r}, headers: {h}, payload {p}".format(
-            c=response.status_code,
-            r=response.reason,
-            h=response.headers,
-            p=response.text))
-        if verbose:
-            log.info("Response text:\n%s" % output)
+        content = self._get(well_known_path)
 
-        # Make sure it returned requests.codes.ok
-        if response.status_code != requests.codes.ok:
-            # Something bad happened
-            raise RequestException("Connection to '{ip}:{port}' has returned the "
-                                   "following code '{c}', instead of the "
-                                   "expected status code '{ok}'"
-                                   .format(ip=ip, port=port, c=response.status_code,
-                                           ok=requests.codes.ok))
         self._is_connected = True
-        log.info("Connected successfully to '{d}'".format(d=self.device.name))
+        logger.info(f"Successfully connected to: {endpoint}")
 
-        return response
+        return content
+
 
     @BaseConnection.locked
     def disconnect(self):
         """
-            Does not make sense to disconnect from a device.
+            Does nothing, as there is no active persistent connection
         """
         self._is_connected = False
         return
 
     @BaseConnection.locked
-    def get(self, api_url, content_type=None, headers=None,
-            expected_status_codes=(
-                requests.codes.no_content,
-                requests.codes.ok
-            ),
-            timeout=30,
-            verbose=False):
-        '''GET REST Command to retrieve information from the device
+    def get(self, restconf_path):
 
-        Arguments
-        ---------
-        api_url: API url string
-        content_type: expected content type to be returned (xml or json)
-        headers: dictionary of HTTP headers (optional)
-        expected_status_codes: list of expected result codes (integers)
-        timeout: timeout in seconds (default: 30)
-        '''
-        if not self.connected:
-            raise Exception("'{d}' is not connected for "
-                            "alias '{a}'".format(d=self.device.name,
-                                                 a=self.alias))
-        if content_type is None:
-            content_type = self.content_type
-
-        full_url = '{b}{a}'.format(b=self.base_url, a=api_url)
-
-        header = 'application/yang-data+{fmt}'
-
-        if content_type.lower() == 'json':
-            accept_header = header.format(fmt='json')
-        elif content_type.lower() == 'xml':
-            accept_header = header.format(fmt='xml')
-        else:
-            accept_header = content_type
-
-        self.session.headers.update({'Accept': accept_header})
-        if headers is not None:
-            self.session.headers.update(headers)
-
-        log.debug("Sending GET command to '{d}': "
-                 "{u}".format(d=self.device.name, u=full_url))
-        log.debug("Request headers:{headers}".format(
-            headers=self.session.headers))
-
-        response = self.session.get(full_url, proxies=self.proxies, timeout=timeout)
-        output = response.text
-        log.debug("Response: {c} {r}, headers: {h}".format(c=response.status_code,
-                                                           r=response.reason, h=response.headers))
-        if verbose:
-            log.info("Output received:\n{output}".format(output=output))
-
-        # Make sure it returned requests.codes.ok
-        if response.status_code not in expected_status_codes:
-            # Something bad happened
-            raise RequestException("'{c}' result code has been returned "
-                                   "instead of the expected status code(s) "
-                                   "'{e}' for '{d}'\n{t}"
-                                   .format(d=self.device.name,
-                                           c=response.status_code,
-                                           e=expected_status_codes,
-                                           t=response.text))
-        return response
-
-    @BaseConnection.locked
-    def post(self, api_url, payload='', content_type=None, headers=None,
-             expected_status_codes=(
-                 requests.codes.created,
-                 requests.codes.no_content,
-                 requests.codes.ok
-             ),
-             timeout=30,
-             verbose=False):
-        '''POST REST Command to configure information from the device
-
-        Arguments
-        ---------
-        api_url: API url string
-        payload: payload to sent, can be string or dict
-        content_type: expected content type to be returned (xml or json)
-        headers: dictionary of HTTP headers (optional)
-        expected_status_codes: list of expected result codes (integers)
-        timeout: timeout in seconds (default: 30)
-        '''
+        '''GET REST Command to retrieve information from the device'''
 
         if not self.connected:
-            raise Exception("'{d}' is not connected for "
-                            "alias '{a}'".format(d=self.device.name,
-                                                 a=self.alias))
+            raise Exception(f"{self.device.name} is not connected. "\
+                    "Please connect the device first")
 
-        full_url = '{b}{a}'.format(b=self.base_url, a=api_url)
-
-        request_payload = payload
-        if isinstance(payload, dict):
-            assert content_type is not None, 'content_type parameter required when passing dict'
-            if content_type == 'json':
-                request_payload = json.dumps(payload)
-            elif content_type == 'xml':
-                request_payload = dict2xml(payload)
-
-        if content_type is None:
-            if re.match("<", payload.lstrip()) is not None:
-                content_type = 'xml'
-            else:
-                content_type = 'json'
-
-        content_type_header = 'application/yang-data+{fmt}'
-        accept_header = 'application/yang-data+{fmt}'
-
-        if content_type.lower() == 'json':
-            content_type_header = content_type_header.format(fmt='json')
-            accept_header = accept_header.format(fmt='json')
-        elif content_type.lower() == 'xml':
-            content_type_header = content_type_header.format(fmt='xml')
-            accept_header = accept_header.format(fmt='xml')
-        else:
-            content_type_header = content_type
-            accept_header = content_type
-
-        self.session.headers.update({'Content-type': content_type_header})
-        self.session.headers.update({'Accept': accept_header})
-        if headers is not None:
-            self.session.headers.update(headers)
-
-        log.debug("Sending POST command to '{d}': {u}"
-                 .format(d=self.device.name, u=full_url))
-        log.debug("Request headers: {h}\nPayload: {p}"
-                  .format(h=self.session.headers, p=request_payload))
-        if verbose:
-            log.info('Request payload:\n{payload}'.format(
-                payload=request_payload))
-
-        # Send to the device
-        response = self.session.post(
-            full_url, request_payload, proxies=self.proxies, timeout=timeout)
-        output = response.text
-        log.debug("Response: {c} {r}, headers: {h}".format(c=response.status_code,
-                                                           r=response.reason, h=response.headers))
-        if verbose:
-            log.info("Output received:\n{output}".format(output=output))
-
-        # Make sure it returned requests.codes.ok
-        if response.status_code not in expected_status_codes:
-            # Something bad happened
-            raise RequestException("'{c}' result code has been returned "
-                                   "instead of the expected status code(s) "
-                                   "'{e}' for '{d}'\n{t}"
-                                   .format(d=self.device.name,
-                                           c=response.status_code,
-                                           e=expected_status_codes,
-                                           t=response.text))
-        return response
-
-    @BaseConnection.locked
-    def patch(self, api_url, payload, content_type=None, headers=None,
-              expected_status_codes=(
-                  requests.codes.created,
-                  requests.codes.no_content,
-                  requests.codes.ok
-              ),
-              timeout=30,
-              verbose=False):
-        '''PATCH REST Command to configure information from the device
-
-        Arguments
-        ---------
-        api_url: API url string
-        payload: payload to sent, can be string or dict
-        content_type: expected content type to be returned (xml or json)
-        headers: dictionary of HTTP headers (optional)
-        expected_status_codes: list of expected result codes (integers)
-        timeout: timeout in seconds (default: 30)
-        '''
-
-        if not self.connected:
-            raise Exception("'{d}' is not connected for "
-                            "alias '{a}'".format(d=self.device.name,
-                                                 a=self.alias))
-
-        request_payload = payload
-        if isinstance(payload, dict):
-            assert content_type is not None, 'content_type parameter required when passing dict'
-            if content_type == 'json':
-                request_payload = json.dumps(payload)
-            elif content_type == 'xml':
-                request_payload = dict2xml(payload)
-
-        full_url = '{b}{a}'.format(b=self.base_url, a=api_url)
-
-        if content_type is None:
-            if re.match("<", payload.lstrip()) is not None:
-                content_type = 'xml'
-            else:
-                content_type = 'json'
-
-        content_type_header = 'application/yang-data+{fmt}'
-        accept_header = 'application/yang-data+{fmt}'
-
-        if content_type.lower() == 'json':
-            content_type_header = content_type_header.format(fmt='json')
-            accept_header = accept_header.format(fmt='json')
-        elif content_type.lower() == 'xml':
-            content_type_header = content_type_header.format(fmt='xml')
-            accept_header = accept_header.format(fmt='xml')
-        else:
-            content_type_header = content_type
-            accept_header = content_type
-
-        self.session.headers.update({'Content-type': content_type_header})
-        self.session.headers.update({'Accept': accept_header})
-        if headers is not None:
-            self.session.headers.update(headers)
-
-        log.debug("Sending PATCH command to '{d}': {u}".format(
-            d=self.device.name, u=full_url))
-        log.debug("Request headers: {h}\nPayload:{p}".format(h=self.session.headers,
-                                                             p=request_payload))
-        if verbose:
-            log.info('Request payload:\n{payload}'.format(
-                payload=request_payload))
-
-        # Send to the device
-        response = self.session.patch(
-            full_url, request_payload, proxies=self.proxies, timeout=timeout)
-        output = response.text
-        log.debug("Response: {c} {r}, headers: {h}".format(c=response.status_code,
-                                                           r=response.reason, h=response.headers))
-        if verbose:
-            log.info("Output received:\n{output}".format(output=output))
-
-        # Make sure it returned requests.codes.ok
-        if response.status_code not in expected_status_codes:
-            # Something bad happened
-            raise RequestException("'{c}' result code has been returned "
-                                   "instead of the expected status code(s) "
-                                   "'{e}' for '{d}'\n{t}"
-                                   .format(d=self.device.name,
-                                           c=response.status_code,
-                                           e=expected_status_codes,
-                                           t=response.text))
-        return response
-
-    @BaseConnection.locked
-    def put(self, api_url, payload, content_type=None, headers=None,
-            expected_status_codes=(
-                requests.codes.created,
-                requests.codes.no_content,
-                requests.codes.ok
-            ),
-            timeout=30,
-            verbose=False):
-        '''PUT REST Command to configure information from the device
-
-        Arguments
-        ---------
-        api_url: API url string
-        payload: payload to sent, can be string or dict
-        content_type: expected content type to be returned (xml or json)
-        headers: dictionary of HTTP headers (optional)
-        expected_status_codes: list of expected result codes (integers)
-        timeout: timeout in seconds (default: 30)
-        '''
-
-        if not self.connected:
-            raise Exception("'{d}' is not connected for "
-                            "alias '{a}'".format(d=self.device.name,
-                                                 a=self.alias))
-
-        full_url = '{b}{a}'.format(b=self.base_url, a=api_url)
-
-        request_payload = payload
-        if isinstance(payload, dict):
-            assert content_type != None, 'content_type parameter required when passing dict'
-            if content_type == 'json':
-                request_payload = json.dumps(payload)
-            elif content_type == 'xml':
-                request_payload = dict2xml(payload)
-
-        if content_type is None:
-            if re.match("<", payload.lstrip()) is not None:
-                content_type = 'xml'
-            else:
-                content_type = 'json'
-
-        content_type_header = 'application/yang-data+{fmt}'
-        accept_header = 'application/yang-data+{fmt}'
-
-        if content_type.lower() == 'json':
-            content_type_header = content_type_header.format(fmt='json')
-            accept_header = accept_header.format(fmt='json')
-        elif content_type.lower() == 'xml':
-            content_type_header = content_type_header.format(fmt='xml')
-            accept_header = accept_header.format(fmt='xml')
-        else:
-            content_type_header = content_type
-            accept_header = content_type
-
-        self.session.headers.update({'Content-type': content_type_header})
-        self.session.headers.update({'Accept': accept_header})
-        if headers is not None:
-            self.session.headers.update(headers)
-
-        log.debug("Sending PUT command to '{d}': {u}".format(
-            d=self.device.name, u=full_url))
-        log.debug("Request headers: {h}\nPayload:{p}".format(h=self.session.headers,
-                                                             p=request_payload))
-        if verbose:
-            log.info('Request payload:\n{payload}'.format(
-                payload=request_payload))
-
-        # Send to the device
-        response = self.session.put(full_url, request_payload, proxies=self.proxies, timeout=timeout)
-        output = response.text
-        log.debug("Response: {c} {r}, headers: {h}".format(c=response.status_code,
-                                                           r=response.reason, h=response.headers))
-        if verbose:
-            log.info("Output received:\n{output}".format(output=output))
-
-        # Make sure it returned requests.codes.ok
-        if response.status_code not in expected_status_codes:
-            # Something bad happened
-            raise RequestException("'{c}' result code has been returned "
-                                   "instead of the expected status code(s) "
-                                   "'{e}' for '{d}'\n{t}"
-                                   .format(d=self.device.name,
-                                           c=response.status_code,
-                                           e=expected_status_codes,
-                                           t=response.text))
-        return response
-
-    @BaseConnection.locked
-    def delete(self, api_url, content_type=None, headers=None,
-               expected_status_codes=(
-                   requests.codes.created,
-                   requests.codes.no_content,
-                   requests.codes.ok
-               ),
-               timeout=30,
-               verbose=False):
-        '''DELETE REST Command to configure information from the device
-
-        Arguments
-        ---------
-        api_url: API url string
-        content_type: expected content type to be returned (xml or json)
-        headers: dictionary of HTTP headers (optional)
-        expected_status_codes: list of expected result codes (integers)
-        timeout: timeout in seconds (default: 30)
-        '''
-
-        if not self.connected:
-            raise Exception("'{d}' is not connected for "
-                            "alias '{a}'".format(d=self.device.name,
-                                                 a=self.alias))
-
-        if content_type is None:
-            content_type = self.content_type
-
-        full_url = '{b}{a}'.format(b=self.base_url, a=api_url)
-
-        if content_type.lower() == 'json':
-            accept_header = 'application/yang-data+json'
-        elif content_type.lower() == 'xml':
-            accept_header = 'application/yang-data+xml'
-        else:
-            accept_header = content_type
-
-        self.session.headers.update({'Accept': accept_header})
-        if headers is not None:
-            self.session.headers.update(headers)
-
-        log.debug("Sending DELETE command to '{d}': "
-                 "{u}".format(d=self.device.name, u=full_url))
-        log.debug("Request headers:{headers}".format(
-            headers=self.session.headers))
-
-        response = self.session.delete(full_url, proxies=self.proxies, timeout=timeout)
-        output = response.text
-        log.debug("Response: {c} {r}, headers: {h}".format(c=response.status_code,
-                                                           r=response.reason, h=response.headers))
-        if verbose:
-            log.info("Output received:\n{output}".format(output=output))
-
-        # Make sure it returned requests.codes.ok
-        if response.status_code not in expected_status_codes:
-            # Something bad happened
-            raise RequestException("'{c}' result code has been returned "
-                                   "instead of the expected status code(s) "
-                                   "'{e}' for '{d}'\n{t}"
-                                   .format(d=self.device.name,
-                                           c=response.status_code,
-                                           e=expected_status_codes,
-                                           t=response.text))
-        return response
+        return self._get(restconf_path=restconf_path)
