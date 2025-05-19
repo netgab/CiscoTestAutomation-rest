@@ -84,6 +84,35 @@ class Implementation(RestImplementation):
 
         return response
 
+    def _put(self, restconf_path:str, payload):
+    
+        '''PUT REST Command to update information to the device'''
+
+        expected_status_codes = [
+            status_codes.codes.ok,
+            status_codes.codes.no_content
+        ]
+
+        
+        url = f'{self._base_url}/{restconf_path}'
+        logger.debug(f'PUT: {url}')
+        logger.debug(f'Payload: {payload}')
+
+        response = self._session.put(url, json.dumps(payload), timeout=self._timeout)
+
+        logger.debug(f'Response: {response.text}, '\
+                f'headers: {response.headers}, '\
+                f'reason: {response.reason}, '\
+                f'status code: {response.status_code}')
+        
+        if response.status_code not in expected_status_codes:
+            raise RequestException(f"Connection to {url} has returned the " \
+                    f"following code {response.status_code}, instead of the " \
+                    f"expected status code {expected_status_codes}")
+
+        return response
+
+
 
     @BaseConnection.locked
     def connect(self,
@@ -179,6 +208,7 @@ class Implementation(RestImplementation):
         self._session.auth = get_username_password(self)
         self._session.verify = verify
         self._session.headers.update({'Accept': f'application/yang-data+{content_type}'})
+        self._session.headers.update({'Content-Type': f'application/yang-data+{content_type}'})
 
         # support sshtunnel
         if 'sshtunnel' in self.connection_info:
@@ -232,3 +262,15 @@ class Implementation(RestImplementation):
                     "Please connect the device first")
 
         return self._get(restconf_path=restconf_path)
+
+    @BaseConnection.locked
+    def put(self, restconf_path:str, payload):
+
+        '''PUT REST Command to update config on the device'''
+
+        if not self.connected:
+            raise Exception(f"{self.device.name} is not connected. "\
+                    "Please connect the device first")
+        
+        return self._put(restconf_path=restconf_path,
+            payload=payload)    
