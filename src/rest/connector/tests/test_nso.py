@@ -40,6 +40,23 @@ class test_nso_test_connector(unittest.TestCase):
         self.assertEqual(output, response_text)
         return connection
 
+    def test_connect_restconf(self, **kwargs):
+        connection = Rest(device=self.device, alias='rest', via='rest')
+
+        response_text ="""\
+<restconf xmlns="urn:ietf:params:xml:ns:yang:ietf-restconf">
+    <data/>
+    <operations/>
+    <yang-library-version>2019-01-04</yang-library-version>
+</restconf>
+"""
+
+        # Mock /api to return 404 so connect() falls through to /restconf
+        kwargs['mock'].get('http://198.51.100.2:8080/api', status_code=404)
+        kwargs['mock'].get('http://198.51.100.2:8080/restconf', text=response_text)
+        output = connection.connect(verbose=True).text
+        self.assertEqual(output, response_text)
+        return connection
 
     def test_get(self, **kwargs):
         connection = self.test_connect()

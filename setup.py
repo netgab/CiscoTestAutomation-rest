@@ -159,7 +159,7 @@ setup(
         'requests >= 1.15.1',
         'dict2xml',
         'f5-icontrol-rest',
-        'ciscoisesdk'
+        'ciscoisesdk<=2.4.2'
     ],
 
     # any additional groups of dependencies.
@@ -167,8 +167,8 @@ setup(
     extras_require={
         'dev': ['coverage',
                 'restview',
-                'Sphinx',
-                'sphinx-rtd-theme',
+                'Sphinx==7.4.7',
+                'sphinx-rtd-theme==3.1.0',
                 'requests-mock'],
     },
 

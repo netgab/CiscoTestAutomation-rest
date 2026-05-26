@@ -1,7 +1,7 @@
-October 2025
-============
+March 2026
+==========
 
-October 28 - Rest v25.10
+March 31 - Rest v26.3 
 ------------------------
 
 
@@ -9,7 +9,7 @@ October 28 - Rest v25.10
 .. csv-table:: New Module Versions
     :header: "Modules", "Version"
 
-    ``rest.connector``, v25.10
+    ``rest.connector``, v26.3 
 
 
 
